@@ -2,7 +2,7 @@
 Sentiment analysis gone wrong
 
 
-#TODO:
+## TODO:
 
 My plan so far is to get MVP out the door as Kaustabh says, we want to jump on this shit quick. I think minimal interface is ok, maybe generate a markdown report with matplotlib graphs or something every 5 or so minutes. However, generate these from a sliding window of at least 24 hours worth of comments, at least for reddit sources.
 Keep track of the summary metrics from prior intervals (could store every hour or something) so we can have a change over time of prevailing sentiment surrounding different tickers
