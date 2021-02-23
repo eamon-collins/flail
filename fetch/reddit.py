@@ -3,7 +3,7 @@ import praw
 import json
 import os
 import time
-from django.db import models
+from django.db import models, transaction, connection, IntegrityError
 from .models import Comment, Submission
 
 
@@ -30,7 +30,7 @@ def fetch_recent(subreddit, client=None):
 		num_new_comments += add_new_comment(comment)
 
 	num_new_submissions = 0
-	for submission in client.subreddit(subreddit).new():
+	for submission in client.subreddit(subreddit).new(limit=20):
 		num_new_submissions += add_new_submission(submission)
 
 	return num_new_comments, num_new_submissions
@@ -42,6 +42,8 @@ def add_new_comment(comment):
 	#for now, try-except to watch out for attempt to add same comment twice.
 	#might be best way to do it tbh.
 	try:
+		if comment.distinguished:
+			comment.distinguished = True
 		newComment = Comment.objects.create(
 			id = comment.id,
 			author = comment.author.name,
@@ -51,25 +53,28 @@ def add_new_comment(comment):
 			num_replies = len(comment.replies),
 			distinguished = comment.distinguished,
 			created_utc = comment.created_utc,
-			# link_id = comment.link_id,
-			# parent_id = comment.parent_id,
+			link_id = comment.link_id,
+			parent_id = comment.parent_id,
 			subreddit = comment.subreddit.name,
 			permalink = comment.permalink
 			)
 		newComment.save()
 		return 1
-	except Exception as e:
-		print(str(e))
+	except IntegrityError as e:
 		return 0
 
 def add_new_submission(submission):
+
 	try:
+		if submission.edited:
+			submission.edited = True
 		newSubmission = Submission.objects.create(
 			id = submission.id,
 			author = submission.author.name,
 			title = submission.title,
 			score = submission.score,
 			edited = submission.edited,
+			is_self = submission.is_self,
 			num_replies = submission.num_comments,
 			distinguished = submission.distinguished,
 			upvote_ratio = submission.upvote_ratio,
@@ -77,10 +82,10 @@ def add_new_submission(submission):
 			subreddit = submission.subreddit.name,
 			permalink = submission.permalink
 			)
+
 		newSubmission.save()
 		return 1
-	except Exception as e:
-		print(repr(e))
+	except IntegrityError as e:
 		return 0
 
 
@@ -111,9 +116,16 @@ def central_reddit_fetch():
 
 	#Currently scheduling this with a sufficient solution, but
 	#airflow cronjobs would likely be better. Or a parallelized python library
-	starttime = time.time()
 	while True:
-		recent_wsb_comments, recent_wsb_submissions = fetch_recent("wallstreetbets", reddit)
+		starttime = time.time()
+		try:
+			recent_wsb_comments, recent_wsb_submissions = fetch_recent("wallstreetbets", reddit)
+		except Exception as e:
+			print(repr(e))
+		#close database connection so server thread can start anew
+		connection.close()
 
-		if (10.0 - (time.time() - starttime)) > 0:
-			time.sleep(10.0 - (time.time() - starttime)) 
+		nowTime = time.time() - starttime
+		print(nowTime)
+		if (15.0 - nowTime) > 0:
+			time.sleep(15.0 - nowTime) 

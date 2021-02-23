@@ -25,8 +25,8 @@ class Comment(models.Model):
 	num_replies = models.IntegerField()
 	distinguished = models.BooleanField(null=True)
 	created_utc = models.DateTimeField(auto_now=False, auto_now_add=True, null=True)
-	# link_id = models.ForeignKey('Submission', on_delete=models.SET_NULL, null=True)
-	# parent_id = models.ForeignKey('Comment', on_delete=models.SET_NULL, null=True)
+	link_id = models.CharField(max_length=15, null=True)
+	parent_id = models.CharField(max_length=15, null=True)
 	subreddit = models.CharField(max_length=50)#may want to make this an enum kind of thing for easy sorting idk
 	permalink = models.CharField(max_length=200)
 
