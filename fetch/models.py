@@ -36,7 +36,20 @@ class Comment(models.Model):
 #to an identifiable ticker
 class SentimentRating(models.Model):
 	id = models.AutoField(primary_key=True)
-	ticker_symbol = models.CharField(max_length=5)
-	sentiment_rating = models.FloatField()
-	influence_rating = models.FloatField()
+	ticker = models.ForeignKey('Ticker', on_delete=models.SET_NULL, null=True)
+	sentiment_rating = models.FloatField(null=True)
+	influence_rating = models.FloatField(null=True)
 	created_utc = models.DateTimeField()
+
+
+class Ticker(models.Model):
+	id = models.AutoField(primary_key=True)
+	ticker_symbol = models.CharField(max_length=5)
+	keywords = models.CharField(max_length=400)
+	latest_sentiment = models.FloatField(null=True)
+
+	def set_keywords(self, x):
+		self.keywords = json.dumps(x)
+
+	def get_keywords(self):
+		return json.loads(self.keywords)

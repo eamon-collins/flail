@@ -4,13 +4,18 @@ import json
 import os
 import time
 from django.db import models, transaction, connection, IntegrityError
-from .models import Comment, Submission
+from .models import Comment, Submission, SentimentRating, Ticker
 
 
 #make reddit effectively a global variable. 
 #if we're not calling through the main function, you need to 
 #pass a client to any function in to any function that makes requests
 reddit = None
+tickers = None
+
+#when true, we will use the ticker list file and only store relevant comments
+#otherwise, ALL comments are stored
+FILTER_TICKER = False
 
 #fetches recent comments from the specified subreddit
 #takes a subreddit name and optionally a client instance
@@ -42,23 +47,37 @@ def add_new_comment(comment):
 	#for now, try-except to watch out for attempt to add same comment twice.
 	#might be best way to do it tbh.
 	try:
+		#edit down fields with extra info to booleans
 		if comment.distinguished:
 			comment.distinguished = True
-		newComment = Comment.objects.create(
-			id = comment.id,
-			author = comment.author.name,
-			body = comment.body,
-			score = comment.score,
-			edited = comment.edited,
-			num_replies = len(comment.replies),
-			distinguished = comment.distinguished,
-			created_utc = comment.created_utc,
-			link_id = comment.link_id,
-			parent_id = comment.parent_id,
-			subreddit = comment.subreddit.name,
-			permalink = comment.permalink
-			)
-		newComment.save()
+		if comment.edited:
+			comment.edited = True
+
+		#relevant_tickers = check_relevance(comment)
+		relevant_tickers = None
+
+		if relevant_tickers or not FILTER_TICKER:
+			newComment = Comment.objects.create(
+				id = comment.id,
+				author = comment.author.name,
+				body = comment.body,
+				score = comment.score,
+				edited = comment.edited,
+				num_replies = len(comment.replies),
+				distinguished = comment.distinguished,
+				created_utc = comment.created_utc,
+				link_id = comment.link_id,
+				parent_id = comment.parent_id,
+				subreddit = comment.subreddit.name,
+				permalink = comment.permalink
+				)
+			newComment.save()
+		if relevant_tickers:
+			for ticker in relevant_tickers:
+				newSentimentRating = SentimentRating.objects.create(
+					ticker = Ticker.objects.get(ticker["ticker_symbol"])[0],
+					created_utc = comment.created_utc
+					)
 		return 1
 	except IntegrityError as e:
 		return 0
@@ -68,22 +87,32 @@ def add_new_submission(submission):
 	try:
 		if submission.edited:
 			submission.edited = True
-		newSubmission = Submission.objects.create(
-			id = submission.id,
-			author = submission.author.name,
-			title = submission.title,
-			score = submission.score,
-			edited = submission.edited,
-			is_self = submission.is_self,
-			num_replies = submission.num_comments,
-			distinguished = submission.distinguished,
-			upvote_ratio = submission.upvote_ratio,
-			created_utc = submission.created_utc,
-			subreddit = submission.subreddit.name,
-			permalink = submission.permalink
-			)
 
-		newSubmission.save()
+		#relevant_tickers = check_relevance(submission)
+		relevant_tickers = None
+
+		if relevant_tickers or not FILTER_TICKER:
+			newSubmission = Submission.objects.create(
+				id = submission.id,
+				author = submission.author.name,
+				title = submission.title,
+				score = submission.score,
+				edited = submission.edited,
+				is_self = submission.is_self,
+				num_replies = submission.num_comments,
+				distinguished = submission.distinguished,
+				upvote_ratio = submission.upvote_ratio,
+				created_utc = submission.created_utc,
+				subreddit = submission.subreddit.name,
+				permalink = submission.permalink
+				)
+			newSubmission.save()
+		if relevant_tickers:
+			for ticker in relevant_tickers:
+				newSentimentRating = SentimentRating.objects.create(
+					ticker = Ticker.objects.get(ticker["ticker_symbol"])[0],
+					created_utc = comment.created_utc
+					)		
 		return 1
 	except IntegrityError as e:
 		return 0
@@ -100,12 +129,47 @@ def load_secrets():
 		os.environ["REDDIT_ID"] = secrets["client_id"]
 		os.environ["REDDIT_KEY"] = secrets["client_secret"]
 
+def load_tickers(filepath=None):
+	with open(filepath) as file:
+		tickers = json.load(file)
+	#make sure we have these in database
+	for company, data in tickers.items():
+		newTicker, created = Ticker.objects.update_or_create(
+			ticker_symbol = data["ticker_symbol"],
+			defaults = {"keywords":data["keywords"]}
+			)
+
+	return tickers
+
+#checks if the post contains any listed keywords
+#currently submission/comment agnostic, but add check if you're adding
+#source types
+def check_relevance(post):
+	relevant_tickers = []
+	#print(tickers)
+	if hasattr(post, 'body'): #post is a comment
+		for company, data in tickers.items():
+			print(data)
+			for kw in data["keywords"]:
+				if kw in post.body:
+					relevant_tickers.append(data)
+					break
+	else: #post is a submission
+		for company, data in tickers.items():
+			for kw in data["keywords"]:
+				if kw in post.title:
+					relevant_tickers.append(data)
+					break
+	return relevant_tickers
 
 #not intended to be run as a script necessarily, but effectively this 
 #should be the central function for most use of this module
 def central_reddit_fetch():
 	#make sure we have secrets
 	load_secrets()
+	#load the ticker list in
+	global tickers 
+	tickers = load_tickers('tickerlist.json')
 
 	#create client
 	reddit = praw.Reddit(
