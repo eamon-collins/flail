@@ -4,6 +4,7 @@ import json
 import os
 import time
 from django.db import models, transaction, connection, IntegrityError
+from django.core.exceptions import ValidationError
 from .models import Comment, Submission, SentimentRating, Ticker
 
 
@@ -11,11 +12,11 @@ from .models import Comment, Submission, SentimentRating, Ticker
 #if we're not calling through the main function, you need to 
 #pass a client to any function in to any function that makes requests
 reddit = None
-tickers = None
+TICKERS = None
 
 #when true, we will use the ticker list file and only store relevant comments
 #otherwise, ALL comments are stored
-FILTER_TICKER = False
+FILTER_TICKER = True
 
 #fetches recent comments from the specified subreddit
 #takes a subreddit name and optionally a client instance
@@ -50,11 +51,9 @@ def add_new_comment(comment):
 		#edit down fields with extra info to booleans
 		if comment.distinguished:
 			comment.distinguished = True
-		if comment.edited:
-			comment.edited = True
 
-		#relevant_tickers = check_relevance(comment)
-		relevant_tickers = None
+		relevant_tickers = check_relevance(comment)
+		#relevant_tickers = None
 
 		if relevant_tickers or not FILTER_TICKER:
 			newComment = Comment.objects.create(
@@ -62,7 +61,7 @@ def add_new_comment(comment):
 				author = comment.author.name,
 				body = comment.body,
 				score = comment.score,
-				edited = comment.edited,
+				edited = (not comment.edited==False),
 				num_replies = len(comment.replies),
 				distinguished = comment.distinguished,
 				created_utc = comment.created_utc,
@@ -75,8 +74,8 @@ def add_new_comment(comment):
 		if relevant_tickers:
 			for ticker in relevant_tickers:
 				newSentimentRating = SentimentRating.objects.create(
-					ticker = Ticker.objects.get(ticker["ticker_symbol"])[0],
-					created_utc = comment.created_utc
+					ticker = Ticker.objects.get(ticker_symbol=ticker["ticker_symbol"]),
+					created_utc = newComment.created_utc
 					)
 		return 1
 	except IntegrityError as e:
@@ -85,11 +84,13 @@ def add_new_comment(comment):
 def add_new_submission(submission):
 
 	try:
-		if submission.edited:
-			submission.edited = True
+		if submission.distinguished:
+			submission.distinguished = True
+		if submission.is_self:
+			submission.is_self = True
 
-		#relevant_tickers = check_relevance(submission)
-		relevant_tickers = None
+		relevant_tickers = check_relevance(submission)
+		#relevant_tickers = None
 
 		if relevant_tickers or not FILTER_TICKER:
 			newSubmission = Submission.objects.create(
@@ -97,7 +98,7 @@ def add_new_submission(submission):
 				author = submission.author.name,
 				title = submission.title,
 				score = submission.score,
-				edited = submission.edited,
+				edited = (not submission.edited==False),
 				is_self = submission.is_self,
 				num_replies = submission.num_comments,
 				distinguished = submission.distinguished,
@@ -110,10 +111,15 @@ def add_new_submission(submission):
 		if relevant_tickers:
 			for ticker in relevant_tickers:
 				newSentimentRating = SentimentRating.objects.create(
-					ticker = Ticker.objects.get(ticker["ticker_symbol"])[0],
+					ticker = Ticker.objects.get(ticker_symbol=ticker["ticker_symbol"]),
 					created_utc = comment.created_utc
 					)		
 		return 1
+	except ValidationError as e:
+		print(submission.is_self)
+		print(submission.edited)
+		print(submission.distinguished)
+		raise e
 	except IntegrityError as e:
 		return 0
 
@@ -148,14 +154,13 @@ def check_relevance(post):
 	relevant_tickers = []
 	#print(tickers)
 	if hasattr(post, 'body'): #post is a comment
-		for company, data in tickers.items():
-			print(data)
+		for company, data in TICKERS.items():
 			for kw in data["keywords"]:
 				if kw in post.body:
 					relevant_tickers.append(data)
 					break
 	else: #post is a submission
-		for company, data in tickers.items():
+		for company, data in TICKERS.items():
 			for kw in data["keywords"]:
 				if kw in post.title:
 					relevant_tickers.append(data)
@@ -168,8 +173,8 @@ def central_reddit_fetch():
 	#make sure we have secrets
 	load_secrets()
 	#load the ticker list in
-	global tickers 
-	tickers = load_tickers('tickerlist.json')
+	global TICKERS 
+	TICKERS = load_tickers('tickerlist.json')
 
 	#create client
 	reddit = praw.Reddit(
@@ -182,10 +187,9 @@ def central_reddit_fetch():
 	#airflow cronjobs would likely be better. Or a parallelized python library
 	while True:
 		starttime = time.time()
-		try:
-			recent_wsb_comments, recent_wsb_submissions = fetch_recent("wallstreetbets", reddit)
-		except Exception as e:
-			print(repr(e))
+
+		recent_wsb_comments, recent_wsb_submissions = fetch_recent("wallstreetbets", reddit)
+
 		#close database connection so server thread can start anew
 		connection.close()
 

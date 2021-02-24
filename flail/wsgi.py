@@ -7,6 +7,9 @@ For more information on this file, see
 https://docs.djangoproject.com/en/3.1/howto/deployment/wsgi/
 """
 
+import django
+django.setup()
+
 import os
 import threading
 from multiprocessing import Process, Lock
