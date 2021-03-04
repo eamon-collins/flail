@@ -15,7 +15,7 @@ reddit = None
 TICKERS = None
 
 #when true, we will use the ticker list file and only store relevant comments
-#otherwise, ALL comments are stored
+#if false, ALL comments are stored
 FILTER_TICKER = True
 
 #fetches recent comments from the specified subreddit
@@ -75,7 +75,8 @@ def add_new_comment(comment):
 			for ticker in relevant_tickers:
 				newSentimentRating = SentimentRating.objects.create(
 					ticker = Ticker.objects.get(ticker_symbol=ticker["ticker_symbol"]),
-					created_utc = newComment.created_utc
+					created_utc = newComment.created_utc,
+					source_comment = newComment
 					)
 		return 1
 	except IntegrityError as e:
@@ -112,15 +113,13 @@ def add_new_submission(submission):
 			for ticker in relevant_tickers:
 				newSentimentRating = SentimentRating.objects.create(
 					ticker = Ticker.objects.get(ticker_symbol=ticker["ticker_symbol"]),
-					created_utc = comment.created_utc
+					created_utc = newSubmission.created_utc,
+					source_submission = newSubmission
 					)		
 		return 1
 	except ValidationError as e:
-		print(submission.is_self)
-		print(submission.edited)
-		print(submission.distinguished)
 		raise e
-	except IntegrityError as e:
+	except IntegrityError as e: #comment with same global id already recorded
 		return 0
 
 
@@ -142,7 +141,8 @@ def load_tickers(filepath=None):
 	for company, data in tickers.items():
 		newTicker, created = Ticker.objects.update_or_create(
 			ticker_symbol = data["ticker_symbol"],
-			defaults = {"keywords":data["keywords"]}
+			keywords = json.dumps(data["keywords"])
+			#defaults = {"keywords":data["keywords"]}
 			)
 
 	return tickers
@@ -186,14 +186,14 @@ def central_reddit_fetch():
 	#Currently scheduling this with a sufficient solution, but
 	#airflow cronjobs would likely be better. Or a parallelized python library
 	while True:
-		starttime = time.time()
+		startTime = time.time()
 
 		recent_wsb_comments, recent_wsb_submissions = fetch_recent("wallstreetbets", reddit)
 
 		#close database connection so server thread can start anew
 		connection.close()
 
-		nowTime = time.time() - starttime
+		nowTime = time.time() - startTime
 		print(nowTime)
 		if (15.0 - nowTime) > 0:
-			time.sleep(15.0 - nowTime) 
+			time.sleep(15.0 - nowTime)

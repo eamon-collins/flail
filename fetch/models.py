@@ -1,4 +1,7 @@
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+import json
 
 # Create your models here.
 
@@ -37,10 +40,11 @@ class Comment(models.Model):
 class SentimentRating(models.Model):
 	id = models.AutoField(primary_key=True)
 	ticker = models.ForeignKey('Ticker', on_delete=models.SET_NULL, null=True)
+	created_utc = models.DateTimeField()
 	sentiment_rating = models.FloatField(null=True)
 	influence_rating = models.FloatField(null=True)
-	created_utc = models.DateTimeField()
-
+	source_comment = models.ForeignKey('Comment', on_delete=models.SET_NULL, null=True)
+	source_submission = models.ForeignKey('Submission', on_delete=models.SET_NULL, null=True)
 
 class Ticker(models.Model):
 	id = models.AutoField(primary_key=True)
