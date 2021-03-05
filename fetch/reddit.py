@@ -6,7 +6,7 @@ import time
 from django.db import models, transaction, connection, IntegrityError
 from django.core.exceptions import ValidationError
 from .models import Comment, Submission, SentimentRating, Ticker
-
+from flail.settings import BASE_DIR
 
 #make reddit effectively a global variable. 
 #if we're not calling through the main function, you need to 
@@ -127,7 +127,7 @@ def add_new_submission(submission):
 #ingests the secrets file and sets them as environment variables
 def load_secrets():
 	if not "REDDIT_KEY" in os.environ:
-		with open('./SECRETS.json') as f:
+		with open(os.path.join(BASE_DIR, 'SECRETS.json')) as f:
 			secrets = json.load(f)
 		secrets = secrets["REDDIT"]
 		os.environ["REDDIT_AGENT"] = secrets["user_agent"]
@@ -174,7 +174,7 @@ def central_reddit_fetch():
 	load_secrets()
 	#load the ticker list in
 	global TICKERS 
-	TICKERS = load_tickers('tickerlist.json')
+	TICKERS = load_tickers(os.path.join(BASE_DIR, 'tickerlist.json'))
 
 	#create client
 	reddit = praw.Reddit(

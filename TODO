@@ -10,3 +10,12 @@ Influence/Social credibility index: classify a subset of relevant comments as "s
 
 Weighted influence index: use a basic measure of how many people interacted (positively or negatively) with the post. Simply weight each post by that. Multiply by upvotes on reddit, weighted scoring for retweets/likes such on twitter, you get the deal. Could factor in both the danger of bot networks reposting to sway sentiment scores and the larger power of someone like Elon posting about bitcoin rather than just you or I. I think this is the best plan.
 Tricky for numerous reasons, chief among them is you'd have to keep rechecking and updating information.
+
+
+
+Problems:
+Ford has ticker symbol of F, hard to filter
+
+RKT is Rocket mortgage, talking about rocket up is not always correlated
+
+need to filter past tense

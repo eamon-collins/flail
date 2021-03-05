@@ -33,6 +33,8 @@ def fetch_thread():
 def analyze_queue_thread():
 	sentiment.central_queue_analyze()
 
+def prepare_graphs_thread():
+	sentiment.prepare_all_graphs()
 
 #This works so far. Investigating a mysql or postgres database
 #solution would be a good addition to minimize multiple db 
@@ -45,7 +47,9 @@ db.connections.close_all()
 databaseLock = Lock()
 pFetch = Process(target=fetch_thread)
 pAnalyze = Process(target=analyze_queue_thread)
+pGraph = Process(target=prepare_graphs_thread)
 
 pFetch.start()
 pAnalyze.start() 
+pGraph.start()
 application = get_wsgi_application()

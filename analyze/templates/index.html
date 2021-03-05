@@ -2,7 +2,13 @@
 <html lang="en">
 {% block body_block %}
 {% load static %}
-<h1>ANALYSIS</>
+<h1>ANALYSIS</h1>
 
+{% for ticker in tickers %}
+	<div>
+		<h2>{{ ticker.name }}</h2>
+		<img src="{% static ticker.image_path %}">
+	</div> 
+{% endfor %}
 {% endblock %}
 
