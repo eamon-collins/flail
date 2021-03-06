@@ -24,11 +24,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flail.settings')
 
 def fetch_thread():
 	reddit.central_reddit_fetch()
-	#CAUTION: PRIMITIVE THREADING SOLUTION
-	#starts a thread when the 
-	# t = threading.Thread(target=reddit.central_reddit_fetch())
-	# t.setDaemon(True)
-	# t.start()
 
 def analyze_queue_thread():
 	sentiment.central_queue_analyze()
@@ -42,14 +37,15 @@ def prepare_graphs_thread():
 #maybe also do a stress test/consistency check to make sure no indeterminacies?
 
 
-db.connections.close_all()
+#db.connections.close_all()
 
-databaseLock = Lock()
-pFetch = Process(target=fetch_thread)
-pAnalyze = Process(target=analyze_queue_thread)
-pGraph = Process(target=prepare_graphs_thread)
 
-pFetch.start()
-pAnalyze.start() 
-pGraph.start()
+# databaseLock = Lock()
+# pFetch = Process(target=fetch_thread)
+# pAnalyze = Process(target=analyze_queue_thread)
+# pGraph = Process(target=prepare_graphs_thread)
+
+# pFetch.start()
+# pAnalyze.start() 
+# pGraph.start()
 application = get_wsgi_application()

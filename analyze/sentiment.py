@@ -75,10 +75,10 @@ def analyze_queue():
 	return num_new
 
 #for specified ticker object, get relevant sentiment ratings from 
-#last 24 hour period and put on a graph gapped into 5 min segments
-def prepare_sentiment_graph(ticker):
+#last 24 hour period and put on a graph gapped into 10 min segments
+def prepare_sentiment_graph(ticker, time_increment=10):
 	delta = timedelta(days=1)
-	x_time_segment = timedelta(minutes=5)
+	x_time_segment = timedelta(minutes=time_increment)
 	#make_aware is djangos UTC conversion
 	now_time = make_aware(datetime.now())
 

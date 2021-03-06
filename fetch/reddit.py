@@ -16,7 +16,7 @@ TICKERS = None
 
 #when true, we will use the ticker list file and only store relevant comments
 #if false, ALL comments are stored
-FILTER_TICKER = True
+FILTER_TICKER = False
 
 #fetches recent comments from the specified subreddit
 #takes a subreddit name and optionally a client instance
@@ -32,7 +32,7 @@ def fetch_recent(subreddit, client=None):
 	#get too many repeated, but also should always be higher so we never miss a comment
 	#either way, database insertion method should check if the comment exists in our records and do nothing if so
 	num_new_comments = 0
-	for comment in client.subreddit(subreddit).comments(limit=100):
+	for comment in client.subreddit(subreddit).comments(limit=50):
 		num_new_comments += add_new_comment(comment)
 
 	num_new_submissions = 0
@@ -79,6 +79,7 @@ def add_new_comment(comment):
 					source_comment = newComment
 					)
 		return 1
+	#if id already exists we've already seen this, dont count as new
 	except IntegrityError as e:
 		return 0
 
@@ -145,6 +146,8 @@ def load_tickers(filepath=None):
 			#defaults = {"keywords":data["keywords"]}
 			)
 
+	global TICKERS 
+	TICKERS = tickers
 	return tickers
 
 #checks if the post contains any listed keywords
