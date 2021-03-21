@@ -188,6 +188,7 @@ def central_reddit_fetch():
 
 	#Currently scheduling this with a sufficient solution, but
 	#airflow cronjobs would likely be better. Or a parallelized python library
+	## Checkout django-celery
 	while True:
 		startTime = time.time()
 
