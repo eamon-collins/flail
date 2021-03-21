@@ -24,13 +24,15 @@ services:
     container_name: flail
     image: flail/flail:app
     restart: always
+    env_file: 
+      - .env
     ports:
-      - "8000:8000"
+      - "${FLAIL_PORT}:8000"
     environment:
       - FLUSH_DATABASE=true
       - DATABASE=postgres
       - POSTGRES_HOST=flail-postgres
-      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_PORT=5432
       - POSTGRES_USER=flail_user
       - POSTGRES_PASSWORD=welcome
       - POSTGRES_DB=flail
