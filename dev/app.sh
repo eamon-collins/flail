@@ -27,9 +27,9 @@ source venv/bin/activate
 # Launch the service defined in the original --TYPE 
 ## argument [onc-app, onc-postgres]
 case $TYPE in
-    onc-app )    
-        python ./oncquest_doc_manager/manage.py runserver 0.0.0.0:8000; break;;
-    onc-postgres ) 
+    flail-django )    
+        python ./flail/manage.py runserver 0.0.0.0:8000; break;;
+    flail-postgres ) 
         cd dev
         docker-compose up
 esac

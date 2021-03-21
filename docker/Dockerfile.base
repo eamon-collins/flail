@@ -1,0 +1,35 @@
+FROM python:3.7-buster
+
+# #############################################
+# ######## Install django environment #########
+# #############################################
+RUN apt-get update && apt-get install -y \
+   python3 python3-pip \
+   fonts-liberation libappindicator3-1 libasound2 libatk-bridge2.0-0 \
+   libnspr4 libnss3 lsb-release xdg-utils libxss1 libdbus-glib-1-2 \
+   curl unzip wget \
+   xvfb
+
+# ###################################
+# ####### Install web servers #######
+# ###################################
+RUN apt-get install -y nginx
+
+#####################################
+########## Install Other ############
+#####################################
+RUN apt-get update && apt-get install -y netcat
+RUN apt-get install -y tmux
+RUN apt-get install -y nfs-common
+RUN apt-get install -y postgresql-client
+RUN pip install --upgrade pip
+
+USER root
+
+#####################################
+#### Install Python Dependencies ####
+#####################################
+RUN mkdir -p /src
+ADD . / /src/
+WORKDIR /src
+RUN pip install ../src

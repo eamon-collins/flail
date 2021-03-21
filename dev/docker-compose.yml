@@ -1,22 +1,24 @@
 version: '3.7'
 
 services:
-  onc-db-dev:
-    container_name: onc-db-dev
+  flail-postgres:
+    container_name: flail-postgres
     image: postgres:13
     restart: always
+    env_file: 
+      - .env
     ports:
-      - "5434:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - type: volume
-        source: oncquest_doc_manager_postgres
+        source: flail_postgres
         target: /var/lib/postgresql/data
         volume:
           nocopy: true
     environment:
-      - POSTGRES_USER=oncquest_doc_manager_user
+      - POSTGRES_USER=flail_user
       - POSTGRES_PASSWORD=welcome
-      - POSTGRES_DB=oncquest_doc_manager
+      - POSTGRES_DB=flail
 
 volumes:
-  oncquest_doc_manager_postgres:
+  flail_postgres:

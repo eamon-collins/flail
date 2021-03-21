@@ -22,15 +22,15 @@ if [[ -n $1 ]]; then
 fi
 
 # Kill the tmux sessions containing the django application
-tmux kill-session -t onc-app
+tmux kill-session -t flail-django
 
 # Optionally erase or turn off the database depending on the -d flag
 if [ "$DATABASE" = "erase" ]; then
-    tmux kill-session -t onc-postgres
-    docker kill onc-db-dev
-    docker rm onc-db-dev
+    tmux kill-session -t flail-postgres
+    docker kill flail-postgres
+    docker rm flail-postgres
 elif [ "$DATABASE" = "off" ]; then
-    tmux kill-session -t onc-postgres
-    docker kill onc-db-dev
-    docker rm onc-db-dev
+    tmux kill-session -t flail-postgres
+    docker kill flail-postgres
+    docker rm flail-postgres
 fi
