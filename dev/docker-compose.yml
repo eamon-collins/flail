@@ -1,0 +1,24 @@
+version: '3.7'
+
+services:
+  flail-postgres:
+    container_name: flail-postgres
+    image: postgres:13
+    restart: always
+    env_file: 
+      - .env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - type: volume
+        source: flail_postgres
+        target: /var/lib/postgresql/data
+        volume:
+          nocopy: true
+    environment:
+      - POSTGRES_USER=flail_user
+      - POSTGRES_PASSWORD=welcome
+      - POSTGRES_DB=flail
+
+volumes:
+  flail_postgres:

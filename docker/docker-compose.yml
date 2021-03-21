@@ -1,0 +1,57 @@
+version: '3.7'
+
+services:
+  flail-postgres:
+    container_name: flail-postgres
+    image: postgres:13
+    restart: always
+    env_file: 
+      - .env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - type: volume
+        source: flail_postgres
+        target: /var/lib/postgresql/data
+        volume:
+          nocopy: true
+    environment:
+      - POSTGRES_USER=flail_user
+      - POSTGRES_PASSWORD=welcome
+      - POSTGRES_DB=flail
+
+  flail:
+    container_name: flail
+    image: flail/flail:app
+    restart: always
+    env_file: 
+      - .env
+    ports:
+      - "${FLAIL_PORT}:8000"
+    environment:
+      - FLUSH_DATABASE=true
+      - DATABASE=postgres
+      - POSTGRES_HOST=flail-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=flail_user
+      - POSTGRES_PASSWORD=welcome
+      - POSTGRES_DB=flail
+    command: flail/config/app/build.sh
+
+  
+
+#  celery:
+#    image: timetobuild/ttb_leaderboard:app
+#    command: "celery -A main.celery worker --loglevel=info"
+#    restart: always
+#
+#  celery-beat:
+#    image: timetobuild/ttb_leaderboard:app
+#    command: "celery -A main.celery beat --loglevel=info"
+#
+#  redis:
+#    image: redis:alpine
+
+
+volumes:
+  flail_postgres:
