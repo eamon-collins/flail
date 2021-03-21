@@ -7,11 +7,13 @@ For more information on this file, see
 https://docs.djangoproject.com/en/3.1/howto/deployment/wsgi/
 """
 
-import django
-django.setup()
+#import django
+#django.setup()
  
 import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flail.settings')
 import threading
+
 from multiprocessing import Process, Lock
 import fetch.reddit as reddit
 import analyze.sentiment as sentiment
@@ -19,7 +21,7 @@ import analyze.sentiment as sentiment
 from django.core.wsgi import get_wsgi_application
 from django import db
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flail.settings')
+
 
 
 def fetch_thread():

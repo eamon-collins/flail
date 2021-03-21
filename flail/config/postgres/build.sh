@@ -6,7 +6,7 @@
 
 set -e
 
-export PGPASSWORD=${POSTGRES_PASSWORD}; psql -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -d flail  <<-EOSQL
+export PGPASSWORD=${POSTGRES_PASSWORD}; psql -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -d ${POSTGRES_DB}  <<-EOSQL
 
 # INSERT INTO "customImport_import" (id, name) 
 # VALUES 
