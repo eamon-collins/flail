@@ -26,12 +26,13 @@ SECRET_KEY = '(w4h1530%=t*1bg&1ha!r1#@h&%hxtw+@uu91kb@t4vbeupn5n'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'flail',
     'fetch',
     'analyze',
     'django.contrib.admin',
@@ -76,10 +77,20 @@ WSGI_APPLICATION = 'flail.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
+POSTGRES_USER = os.environ.get("POSTGRES_USER", 'flail_user')
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", 'welcome')
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
+
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'flail',
+        'USER': POSTGRES_USER,
+        'PASSWORD': POSTGRES_PASSWORD,
+        'HOST': POSTGRES_HOST,
+        "PORT": POSTGRES_PORT,
     }
 }
 
