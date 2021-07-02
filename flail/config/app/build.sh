@@ -47,6 +47,9 @@ python manage.py collectstatic --no-input
 # Upsert default values in database
 source config/postgres/build.sh
 
+python startBackend.py &
+echo "Started Backend process"
+
 # Start application
 # Start up nginx web server
 /etc/init.d/nginx start
