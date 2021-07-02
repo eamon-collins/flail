@@ -1,6 +1,18 @@
 # flail
 Sentiment analysis gone wrong
 
+## To Get Working
+after a clone, in top level flail:
+./docker/build.sh -f base
+./docker/build.sh -f app
+Will need to rerun the 'app' command if you change package versions/add a new package to setup.py, or even potentially just change the files
+
+then cd ./docker and run: docker-compose up
+
+then, if you want bash access on the running container, (for example to run the top_tickers.py script with access to the database)
+docker exec -it flail /bin/bash
+and then you can navigate around and run scripts like python top_tickers.py or whatever (or startBackend.py, but first check top to see if a python process is already running)
+
 
 ## TODO:
 
