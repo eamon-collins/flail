@@ -20,5 +20,14 @@ services:
       - POSTGRES_PASSWORD=welcome
       - POSTGRES_DB=flail
 
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    ports:
+      - "5050:80"
+    shm_size: '2gb'
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@gmail.com
+      - PGADMIN_DEFAULT_PASSWORD=password
 volumes:
   flail_postgres:
