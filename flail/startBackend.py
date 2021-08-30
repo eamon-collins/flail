@@ -13,7 +13,7 @@ import analyze.sentiment as sentiment
 from flail.settings import BASE_DIR
 
 import praw
-
+import datetime as dt
 import time
 
 TICKERS = None
@@ -35,6 +35,10 @@ def main():
 		user_agent=os.environ["REDDIT_AGENT"]
 		)
 
+	print("Fetching historical data")
+	start = dt.datetime(2021, 8, 1)
+	end = dt.datetime(2021, 8, 30)
+	reddit.fetch_historical_comments("wallstreetbets", start, end)
 
 	startTime = time.time()
 	#makes it so it generates a graph right when you start for convenience

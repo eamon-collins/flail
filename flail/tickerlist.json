@@ -2,9 +2,5 @@
 "Palantir" : {
 	"ticker_symbol" : "PLTR",
 	"keywords" : ["PLTR", "pltr", "palantir", "Palantir"]
-},
-"Academy Sports" : {
-	"ticker_symbol" : "ASO",
-	"keywords" : ["ASO", "aso ", "academy", "Academy"]		
 }
 }
