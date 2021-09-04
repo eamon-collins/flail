@@ -9,6 +9,7 @@ import django
 django.setup()
 
 import fetch.reddit as reddit
+import fetch.twitter as twitter
 import analyze.sentiment as sentiment
 from flail.settings import BASE_DIR
 
@@ -25,8 +26,9 @@ def main():
 	#make sure we have secrets
 	reddit.load_secrets()
 	#load the ticker list in
-	global TICKERS 
-	TICKERS = reddit.load_tickers(os.path.join(BASE_DIR, 'tickerlist.json'))
+	#should now be done whenever you import fetch.reddit
+	# global TICKERS 
+	# TICKERS = reddit.load_tickers(os.path.join(BASE_DIR, 'tickerlist.json'))
 
 	#create client
 	redditClient = praw.Reddit(
@@ -35,10 +37,13 @@ def main():
 		user_agent=os.environ["REDDIT_AGENT"]
 		)
 
-	print("Fetching historical data")
-	start = dt.datetime(2021, 8, 1)
-	end = dt.datetime(2021, 8, 30)
-	reddit.fetch_historical_comments("wallstreetbets", start, end)
+	# print("Fetching historical data")
+	# start = dt.datetime(2021, 8, 28,hour=0, minute = 55, second=41)
+	# end = dt.datetime(2021, 9, 1)
+	# reddit.fetch_historical_comments("wallstreetbets", start, end)
+
+	# twitter.ingest_twitter_json("/home/eamon/Downloads/text-query-tweets2.json")
+	# return
 
 	startTime = time.time()
 	#makes it so it generates a graph right when you start for convenience
@@ -56,7 +61,7 @@ def main():
 		#every 10 mins prepare graphs and update longer term diagnostic
 		#info like volume of relevant 
 		if loopTime - lastGraph >= 600:
-			for company, data in TICKERS.items():
+			for company, data in reddit.TICKERS.items():
 				sentiment.prepare_sentiment_graph(data)
 
 			lastGraph = time.time()

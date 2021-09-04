@@ -12,7 +12,8 @@ import json
 from django.db import models, transaction, connection, IntegrityError
 from django.core.exceptions import ValidationError
 from fetch.models import Comment, Submission, SentimentRating, Ticker
-#from fetch.reddit import load_tickers
+#want this so we can use TICKERS
+import fetch.reddit as reddit
 from flail.settings import BASE_DIR
 from django.utils.timezone import make_aware
 
@@ -34,14 +35,17 @@ def load_tickers(filepath=None):
 def analyze_queue():
 	analyzer = SentimentIntensityAnalyzer()
 
-	new_sentiments = SentimentRating.objects.filter(sentiment_rating__isnull=True)
+	start_time = datetime(2021,9,2,hour=10)
+	new_sentiments = SentimentRating.objects.filter(sentiment_rating__isnull=True, created_utc__gte=start_time)
 	num_new = new_sentiments.count()
 
 	for sentimentRating in new_sentiments:
 		if sentimentRating.source_comment is not None:
 			text = sentimentRating.source_comment.body
 		elif sentimentRating.source_submission is not None:
-			text = sentimentRating.source_submission.title 
+			text = sentimentRating.source_submission.title
+		elif sentimentRating.source_tweet is not None:
+			text = sentimentRating.source_tweet.body 
 		else:
 			print("no source text to analyze")
 			continue
@@ -67,7 +71,10 @@ def analyze_queue():
 				continue
 			sentiments.append(analyzer.polarity_scores(sentence)['compound'])
 
-		sentimentRating.sentiment_rating = sum(sentiments) / len(sentiments)
+		if len(sentiments):
+			sentimentRating.sentiment_rating = sum(sentiments) / len(sentiments)
+		else:
+			sentimentRating.sentiment_rating = 0 
 
 	if num_new > 0:
 		SentimentRating.objects.bulk_update(new_sentiments, ['sentiment_rating'])
@@ -161,9 +168,10 @@ def central_queue_analyze():
 
 		#not sure if this is really needed, but probably at least 
 		#best to keep doing it until we get a non-file db solution up
-		connection.close()
+		#connection.close()
 
 		nowTime = time.time() - startTime
-		print("Analysis of queue took "+repr(nowTime)+" secs and analyzed "+repr(num_in_queue)+" new entries.")
+		if num_in_queue > 0:
+			print("Analysis of queue took "+repr(nowTime)+" secs and analyzed "+repr(num_in_queue)+" new entries.")
 		if (30 - nowTime) > 0:
 			time.sleep(30 - nowTime)

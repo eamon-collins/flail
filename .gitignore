@@ -11,4 +11,5 @@ media
 */*/migrations/*
 backups/
 static/graphs/*
+flail/tickerlist.json
 venv/

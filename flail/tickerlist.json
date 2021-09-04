@@ -1,6 +1,7 @@
 {
-"Palantir" : {
-	"ticker_symbol" : "PLTR",
-	"keywords" : ["PLTR", "pltr", "palantir", "Palantir"]
+
+"Sphere3D" : {
+	"ticker_symbol" : "ANY",
+	"keywords" : ["ANY", "#any", "Sphere 3D", "sphere"]
 }
 }

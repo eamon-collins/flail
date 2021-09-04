@@ -5,9 +5,10 @@ import json
 import os
 import time
 import datetime as dt
+from asyncio import Queue
 from django.db import models, transaction, connection, IntegrityError
 from django.core.exceptions import ValidationError
-from .models import Comment, Submission, SentimentRating, Ticker
+from .models import Comment, Submission, SentimentRating, Ticker, Tweet
 from flail.settings import BASE_DIR
 
 #make reddit effectively a global variable. 
@@ -36,12 +37,12 @@ def fetch_recent(subreddit, client=None):
 	#get too many repeated, but also should always be higher so we never miss a comment
 	#either way, database insertion method should check if the comment exists in our records and do nothing if so
 	num_new_comments = 0
-	for comment in client.subreddit(subreddit).comments(limit=50):
+	for comment in client.subreddit(subreddit).comments(limit=100):
 		num_new_comments += add_new_comment(comment)
 
 	num_new_submissions = 0
-	for submission in client.subreddit(subreddit).new(limit=20):
-		num_new_submissions += add_new_submission(submission)
+	# for submission in client.subreddit(subreddit).new(limit=20):
+	# 	num_new_submissions += add_new_submission(submission)
 
 	return num_new_comments, num_new_submissions
 
@@ -58,36 +59,67 @@ def fetch_historical_comments(subreddit, start_time, end_time=None):
 			user_agent=os.environ["REDDIT_AGENT"]
 			)
 
-	psawAPI = PushshiftAPI(client)
+	pmawAPI = PushshiftAPI(client)
 
 
 	
-	start_time = int(start_time.timestamp())
+	start = int(start_time.timestamp())
 	if end_time:
-		end_time = int(end_time.timestamp())
+		end = int(end_time.timestamp())
 	else:
-		end_time = int(dt.utcnow().timestamp())
+		end = int(dt.utcnow().timestamp())
 
-	last_comment_time = start_time + 1
+	last_comment_time = start + 1
 	num_new_comments = 0
 
-	while last_comment_time < end_time:
-		comments = psawAPI.search_comments(subreddit=subreddit,
-							after=start_time, 
-							before=end_time+60,
-							size=500
-							)
 
+	#this creates a generator object that will automatically handle 
+	#batching requests. limited to 60 requests of 100 per minute.
+	#
+	# comments = pmawAPI.search_comments(subreddit=subreddit,
+	# 					after=start, 
+	# 					before=end+60,
+	# 					size=100,
+	# 					limit=100,
+	# 					max_results_per_request=100,
+	# 					sort="asc")
+
+	
+	max_comments_cache = 1000
+	total_count = 0
+	lastComment = None
+	comment_queue = Queue()
+	while True:
+		comments = pmawAPI.search_comments(subreddit=subreddit,
+						after=start, 
+						before=end+60,
+						size=100,
+						limit=100,
+						max_results_per_request=100,
+						sort="asc")
+		
+		count = 0
+		stime = time.time()
 		for c in comments:
 			num_new_comments += add_new_comment(c)
+			count += 1
+			#print(dt.datetime.fromtimestamp(int(c.created_utc)).isoformat() + " : " + c.body)
 
-		#update our end condition and also make sure we get a new batch next request
-		if comments:
-			last_comment_time = comments[-1].created_utc
-			start_time = comments[-1].created_utc
-		else:
-			print("No comments found, exiting historical search")
+			lastComment = c
+			if count >= max_comments_cache:
+				print("numcomms: "+ str(total_count)+"  lastcommenttime:" + dt.datetime.fromtimestamp(int(c.created_utc)).isoformat())
+				break
+		etime = time.time()
+		total_count += count
+		start = int(lastComment.created_utc)
+		print("new start time: "+ dt.datetime.fromtimestamp(start).isoformat())
+		print(total_count)
+		print("time to analyze: "+str(etime-stime))
+
+		if lastComment and lastComment.created_utc >= end:
 			break
+	
+
 
 #Passes in an open database instance and a praw.Comment object and an open database instance
 #should check to see if comment is in database or not
@@ -99,8 +131,8 @@ def add_new_comment(comment):
 		#edit down fields with extra info to booleans
 		if comment.distinguished:
 			comment.distinguished = True
-		if comment.author is None:
-			author = "None/Deleted"
+		if not comment.author:
+			author = "[deleted]"
 		else:
 			author = comment.author.name
 
@@ -130,6 +162,7 @@ def add_new_comment(comment):
 					created_utc = newComment.created_utc,
 					source_comment = newComment
 					)
+				newSentimentRating.save()
 		return 1
 	#if id already exists we've already seen this, dont count as new
 	except IntegrityError as e:
@@ -212,14 +245,22 @@ def check_relevance(post):
 		for company, data in TICKERS.items():
 			for kw in data["keywords"]:
 				if kw in post.body:
-					relevant_tickers.append(data)
+					if data not in relevant_tickers:
+						relevant_tickers.append(data)
 					break
-	else: #post is a submission
+	elif hasattr(post, 'is_self'): #post is a submission
 		for company, data in TICKERS.items():
 			for kw in data["keywords"]:
 				if kw in post.title:
-					relevant_tickers.append(data)
+					if data not in relevant_tickers:
+						relevant_tickers.append(data)
 					break
+	elif isinstance(post, dict) and "retweetCount" in post.keys(): #post is tweet json
+		for company, data in TICKERS.items():
+			for kw in data["keywords"]:
+				if kw in post["content"]:
+					if data not in relevant_tickers:
+						relevant_tickers.append(data)
 	return relevant_tickers
 
 #not intended to be run as a script necessarily, but effectively this 
@@ -228,8 +269,8 @@ def central_reddit_fetch():
 	#make sure we have secrets
 	load_secrets()
 	#load the ticker list in
-	global TICKERS 
-	TICKERS = load_tickers(os.path.join(BASE_DIR, 'tickerlist.json'))
+	#global TICKERS 
+	#TICKERS = load_tickers(os.path.join(BASE_DIR, 'tickerlist.json'))
 
 	#create client
 	if client is None:
@@ -260,3 +301,9 @@ def central_reddit_fetch():
 		print(nowTime)
 		if (15.0 - nowTime) > 0:
 			time.sleep(15.0 - nowTime)
+
+
+
+#anything that imports reddit module will have access to the TICKERS variable
+#by using reddit.TICKERS
+load_tickers(os.path.join(BASE_DIR, "tickerlist.json"))

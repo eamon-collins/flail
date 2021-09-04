@@ -42,9 +42,9 @@ def prepare_graphs_thread():
 
 # databaseLock = Lock()
 # pFetch = Process(target=fetch_thread)
-# pAnalyze = Process(target=analyze_queue_thread)
+pAnalyze = Process(target=analyze_queue_thread)
 # pGraph = Process(target=prepare_graphs_thread)
 
 # pFetch.start()
-# pAnalyze.start() 
+#pAnalyze.start() 
 # pGraph.start()

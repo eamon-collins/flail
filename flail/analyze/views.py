@@ -21,6 +21,6 @@ def index(request):
 		#symbol, but later will have things like volume, last stock price, etc to get from this object
 		tickerObject = Ticker.objects.get(ticker_symbol=data['ticker_symbol'])
 		ticker_dict['name'] = tickerObject.ticker_symbol
-		ticker_dict['image_path'] = "graphs/"+repr(tickerObject.id)+"_sentiment.png"
+		ticker_dict['image_path'] = path.join(BASE_DIR, 'static/graphs/'+repr(tickerObject.id)+'_sentiment.png')
 		context['tickers'].append(ticker_dict)
 	return render(request, 'index.html', context)

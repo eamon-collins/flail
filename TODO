@@ -19,3 +19,6 @@ Ford has ticker symbol of F, hard to filter
 RKT is Rocket mortgage, talking about rocket up is not always correlated
 
 need to filter past tense
+
+
+bug where if multiple keywords are mentioned relevant_tickers has dupes

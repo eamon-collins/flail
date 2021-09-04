@@ -14,19 +14,24 @@ import requests
 import numpy as np
 import matplotlib.pyplot as plt
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from gamestonk_terminal import config_terminal as cfg
-from gamestonk_terminal.helper_funcs import (
-    get_data,
-    clean_tweet,
-    parse_known_args_and_warn,
-    plot_autoscale,
-    check_int_range,
-)
-import gamestonk_terminal.config_plot as cfg_plot
-from gamestonk_terminal import feature_flags as gtff
+# from gamestonk_terminal import config_terminal as cfg
+# from gamestonk_terminal.helper_funcs import (
+#     get_data,
+#     clean_tweet,
+#     parse_known_args_and_warn,
+#     plot_autoscale,
+#     check_int_range,
+# )
+# import gamestonk_terminal.config_plot as cfg_plot
+# from gamestonk_terminal import feature_flags as gtff
 import json
+import datetime as dt
 import pandas as pd
 import re 
+
+import fetch.reddit as reddit
+from django.db import models, transaction, connection, IntegrityError
+from .models import Tweet, SentimentRating, Ticker
 
 def twitter_search(ticker, max_results, st_dt):
     analyzer = SentimentIntensityAnalyzer()
@@ -312,3 +317,43 @@ def sentiment(other_args: List[str], s_ticker: str):
 
     except Exception as e:
         print(e, "\n")
+
+
+
+#Use this function to ingest twitter data from a json file
+#should only have to use this once per database reset, which shouldn't happen often
+#will reanalyze 
+def ingest_twitter_json(filepath):
+    f = open(filepath)
+    tweets = []
+    for line in f:
+        tweet = json.loads(line)
+
+        relevant_tickers = reddit.check_relevance(tweet)
+        
+        try:
+            if relevant_tickers:
+                newTweet = Tweet.objects.create(
+                    id = tweet["id"],
+                    username = tweet["user"]["username"],
+                    display_name = tweet["user"]["displayname"],
+                    body = tweet["content"],
+                    url = tweet["url"],
+                    created_utc = dt.datetime.fromisoformat(tweet["date"]),
+                    num_replies = int(tweet["replyCount"]),
+                    num_retweets = int(tweet["retweetCount"]),
+                    num_likes = int(tweet["likeCount"]),
+                    num_user_follows = int(tweet["user"]["followersCount"])
+                    )
+                newTweet.save()
+
+                for ticker in relevant_tickers:
+                    newSentimentRating = SentimentRating.objects.create(
+                        ticker = Ticker.objects.get(ticker_symbol=ticker["ticker_symbol"]),
+                        created_utc = newTweet.created_utc,
+                        source_tweet = newTweet
+                        )
+                    newSentimentRating.save()
+        except IntegrityError as e:
+            print(e)
+
