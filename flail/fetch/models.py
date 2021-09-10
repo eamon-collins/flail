@@ -69,6 +69,7 @@ class Ticker(models.Model):
 	keywords = models.CharField(max_length=400)
 	latest_sentiment = models.FloatField(null=True)
 	volume = models.FloatField(null=True)
+	#daily_ticker = models.BooleanField(null=True, default=False)
 
 	def set_keywords(self, x):
 		self.keywords = json.dumps(x)

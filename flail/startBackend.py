@@ -16,6 +16,7 @@ from flail.settings import BASE_DIR
 import praw
 import datetime as dt
 import time
+from threading import Timer
 
 TICKERS = None
 
@@ -38,12 +39,24 @@ def main():
 		)
 
 	# print("Fetching historical data")
-	# start = dt.datetime(2021, 8, 28,hour=0, minute = 55, second=41)
-	# end = dt.datetime(2021, 9, 1)
+	# start = dt.datetime(2021, 9, 1, hour=15, minute=50)
+	# end = dt.datetime(2021, 9, 9)
 	# reddit.fetch_historical_comments("wallstreetbets", start, end)
 
 	# twitter.ingest_twitter_json("/home/eamon/Downloads/text-query-tweets2.json")
 	# return
+
+	#set up a timer to handle aggregating the top tickers and emailing the info out
+	#20 because that's 4pm EST specified in UTC
+	x = dt.datetime.today()
+	today = 1 if x.hour >= 20 else 0
+	y = (x + dt.timedelta(days=today)).replace(hour=20,minute=0,second=0,microsecond=0) 
+	delta_t = y-x
+
+	print(delta_t.total_seconds())
+
+	t = Timer(delta_t.total_seconds(), reddit.aggregate_daily_tickers)
+	t.start()
 
 	startTime = time.time()
 	#makes it so it generates a graph right when you start for convenience
@@ -51,7 +64,7 @@ def main():
 	while(True):
 		loopTime = time.time()
 		
-		recent_wsb_comments, recent_wsb_submissions = reddit.fetch_recent("wallstreetbets", redditClient)
+		recent_wsb_comments, recent_wsb_submissions = reddit.fetch_recent("wallstreetbets", redditClient, )
 		fetch_time = time.time()
 		print("Fetched "+repr(recent_wsb_comments) +" new comments and "+repr(recent_wsb_submissions)+" new submissions in "+repr(round(fetch_time-loopTime, 2))+" seconds")
 
@@ -66,6 +79,8 @@ def main():
 
 			lastGraph = time.time()
 			print("Produced new graphs")
+
+			#also use this time to send 
 
 		nowTime = time.time() - loopTime
 		if (15.0 - nowTime) > 0:

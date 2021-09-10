@@ -12,4 +12,5 @@ media
 backups/
 static/graphs/*
 flail/tickerlist.json
+flail/dailytickers.json
 venv/
