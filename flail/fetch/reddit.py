@@ -49,7 +49,7 @@ def fetch_recent(subreddit, client=None, tickerlist=None):
 	#get too many repeated, but also should always be higher so we never miss a comment
 	#either way, database insertion method should check if the comment exists in our records and do nothing if so
 	num_new_comments = 0
-	for comment in client.subreddit(subreddit).comments(limit=100):
+	for comment in client.subreddit(subreddit).comments(limit=70):
 		num_new_comments += add_new_comment(comment, tickerlist)
 		daily_tickers = update_daily_tickers(comment, daily_tickers)
 
@@ -152,6 +152,8 @@ def aggregate_daily_tickers(reset=True):
 	t = Timer(delta_t.total_seconds(), aggregate_daily_tickers)
 	t.start()
 
+	junklist = ["WAS", "FUCK", "SHIT", "WSB", "DAY", "SELL", "BUY", "GUH", "YOLO", "GTFO", "THE", "ARE"]
+
 	with open(os.path.join(BASE_DIR, "dailytickers.json")) as file:
 		daily_tickers = json.load(file)
 
@@ -170,10 +172,9 @@ def aggregate_daily_tickers(reset=True):
 
 	email_string += "\nWhole List: \n" +repr(sorted_tickers)
 
-	#msg = EmailMessage()
-	#msg.set_content(email_string)
-	#msg['Subject'] = "TOP DAILY TICKERS " + dt.datetime.today().isoformat() + "\n"
-	#msg['']
+	#reset dailyticker file so it gathers new ones tomorrow
+	with open(os.path.join(BASE_DIR, "dailytickers.json"), 'w') as file:
+		file.write("{}")
 
 	try:
 		context = ssl.create_default_context()

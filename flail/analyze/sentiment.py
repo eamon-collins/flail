@@ -82,9 +82,9 @@ def analyze_queue():
 	return num_new
 
 #for specified ticker object, get relevant sentiment ratings from 
-#last 24 hour period and put on a graph gapped into 10 min segments
+#last {delta} period and put on a graph gapped into 10 min segments
 def prepare_sentiment_graph(ticker, time_increment=10):
-	delta = timedelta(days=1)
+	delta = timedelta(days=10)
 	x_time_segment = timedelta(minutes=time_increment)
 	#make_aware is djangos UTC conversion
 	now_time = make_aware(datetime.now())
@@ -103,6 +103,8 @@ def prepare_sentiment_graph(ticker, time_increment=10):
 	more_now_time = datetime.now()
 	#x_axis = drange(more_now_time-delta, more_now_time, x_time_segment)
 	x_axis = np.arange(num_x_segments)
+	#x_axis = []
+	
 	print("start: "+time_counter.strftime('%d:%H:%M') + "  end: "+now_time.strftime('%d:%H:%M'))
 	#print("numxseg " + repr(num_x_segments)+ "lenxaxis "+repr(len(x_axis)))
 	index = 0
@@ -119,6 +121,7 @@ def prepare_sentiment_graph(ticker, time_increment=10):
 				x_neutral[index] += 1
 
 		index +=1
+		#x_axis.append(time_counter)
 		time_counter += x_time_segment
 
 	# print(x_axis)
@@ -129,10 +132,12 @@ def prepare_sentiment_graph(ticker, time_increment=10):
 	#ax = plt.subplot(111)
 	fig, ax = plt.subplots(figsize=(12,3))
 	ax.xaxis_date(tz='EST')
-	ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+	ax.xaxis.set_major_formatter(DateFormatter('%d:%H:%M'))
+
 	ax.bar(x_axis, x_positive, color= 'g', align='center')
 	ax.bar(x_axis, x_neutral, color= 'grey', bottom = x_positive, align='center')
 	ax.bar(x_axis, x_negative, color='r', bottom = x_positive+x_neutral, align='center')
+
 
 	
 	plt.savefig(path.join(BASE_DIR, 'static/graphs/'+repr(tickerObject.id)+'_sentiment.png'))

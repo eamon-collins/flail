@@ -83,8 +83,8 @@ def main():
 			#also use this time to send 
 
 		nowTime = time.time() - loopTime
-		if (15.0 - nowTime) > 0:
-			time.sleep(15.0 - nowTime)
+		if (30.0 - nowTime) > 0:
+			time.sleep(30.0 - nowTime)
 
 
 if __name__ == '__main__':
