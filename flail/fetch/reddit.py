@@ -157,11 +157,25 @@ def aggregate_daily_tickers(reset=True):
 	with open(os.path.join(BASE_DIR, "dailytickers.json")) as file:
 		daily_tickers = json.load(file)
 
+	#checks if the word/phrase is in the nyse registered ticker list
+	nyse = []
+	updated_daily_tickers = {}
+	with open(os.path.join(BASE_DIR, "ticker_NYSE.txt")) as file:
+		for line in file:
+			nyse.append(line.strip())
+	for tick, volume in daily_tickers.items():
+		if tick in nyse:
+			updated_daily_tickers[tick] = volume
+	daily_tickers = update_daily_tickers
+
+
+
 	email_string = "TOP DAILY TICKERS " + dt.datetime.today().isoformat() + "\n"
 	sorted_tickers = sorted(daily_tickers.items(), key=lambda x: x[1], reverse=True)
 	if len(sorted_tickers) < 3:
 		print("Not enough tickers to send email")
 		return
+
 
 	for i in range(3):
 		tick = sorted_tickers[i]
