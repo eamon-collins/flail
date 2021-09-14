@@ -152,7 +152,7 @@ def aggregate_daily_tickers(reset=True):
 	t = Timer(delta_t.total_seconds(), aggregate_daily_tickers)
 	t.start()
 
-	junklist = ["WAS", "FUCK", "SHIT", "WSB", "DAY", "SELL", "BUY", "GUH", "YOLO", "GTFO", "THE", "ARE"]
+	
 
 	with open(os.path.join(BASE_DIR, "dailytickers.json")) as file:
 		daily_tickers = json.load(file)
@@ -389,7 +389,18 @@ def central_reddit_fetch():
 		if (15.0 - nowTime) > 0:
 			time.sleep(15.0 - nowTime)
 
+def fuck_this_list():
+	ticks = []
+	with open(os.path.join(BASE_DIR, "ticker_NYSE.txt")) as file:
+		for line in file:
+			if line != "" and line != "\n" and "$" not in line and "." not in line:
+				ticks.append(line)
+	with open(os.path.join(BASE_DIR, "ticker_NYSE.txt"), 'w') as file:
+		for line in ticks:
+			file.write(line)
 
+
+			
 
 #anything that imports reddit module will have access to the TICKERS variable
 #by using reddit.TICKERS
